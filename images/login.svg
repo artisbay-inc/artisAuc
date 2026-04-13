@@ -1,0 +1,11 @@
+﻿<svg width="500" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="loginGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E398A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1DA1F2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="500" height="400" fill="url(#loginGrad)"/>
+  <text x="250" y="200" font-family="Arial" font-size="32" fill="white" text-anchor="middle">ArtisAuc</text>
+  <text x="250" y="240" font-family="Arial" font-size="18" fill="white" text-anchor="middle" opacity="0.9">Japan Auto Auctions</text>
+</svg>
