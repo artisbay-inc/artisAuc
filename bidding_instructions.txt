@@ -1,0 +1,21 @@
+Choose amount of bid
+Chose group ABCD…
+Then number 123….
+Then place the bid
+The system sends the bid to the admin via email (ignore for now)
+Saves it in the user’s account (a car page with the bid amount and so…) (ignore for now)
+Amount should be shown in JPY and USD (auto converter)
+and the Bid is in JPY and not USD
+
+the user choose the group, and number of cars he want to buy inside that group
+For example
+he bid on 3 Golf but he need only one so it will be as the following:
+A-1 and then he repeat the same for the rest of the cars A-1 (1st car) A-1 (2nd car)..A-1 (3rd car)
+or B-1 same procedure
+or C-1 same procedure
+Second example, he are bidding on 3 Golf but he need two units so it will be as the following:
+A-2 and then you repeat the same for the rest of the cars A-2 (1st car) then A-2 (2nd car) then..A-2 (3rd car)
+Or B-2 same procedure
+Or C-2 same procedure
+In another expression, the group is a symbol of one model that you are looking for and the number is how many units of that model you are willing to buy.
+but no groups can be selected for auctions which start after 15h Japan time

@@ -1,0 +1,166 @@
+.my-bids-page {
+  padding: 26px;
+}
+
+.bids-hero {
+  background: linear-gradient(135deg, rgba(29, 161, 242, 0.12), rgba(30, 57, 138, 0.12));
+  border: 1px solid #e5e7eb;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.bids-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  background: #fff;
+  border-radius: 0;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.bids-summary .label {
+  margin: 0;
+  color: #4b5563;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.bids-summary .value {
+  margin: 2px 0 0;
+  font-weight: 800;
+  font-size: 1.35rem;
+  color: #1e398a;
+}
+
+.bids-table {
+  border: 1px solid #e5e7eb;
+  border-radius: 0;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.08);
+}
+
+.bids-table .table-head,
+.bids-table .table-row {
+  display: grid;
+  grid-template-columns: 1.2fr 2fr 1.3fr 1fr 1fr 1.6fr 1.2fr;
+  gap: 10px;
+  padding: 12px 14px;
+  align-items: center;
+}
+
+.bids-table .table-head {
+  background: #f7f9fd;
+  font-weight: 800;
+  color: #4b5563;
+}
+
+.bids-table .table-row:nth-child(even) {
+  background: #fcfdff;
+}
+
+.bids-table .lot {
+  font-weight: 800;
+  color: #1e398a;
+}
+
+.bids-table .vehicle,
+.bids-table .auction,
+.bids-table .timeline {
+  color: #111827;
+}
+
+.bids-table .bid {
+  font-weight: 800;
+}
+
+.bids-table .ab-note {
+  color: #0f172a;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.bids-table .timeline small {
+  display: block;
+  color: #6b7280;
+}
+
+.bids-table .row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+  color: #0f172a;
+}
+
+.pill-watch {
+  background: rgba(30, 57, 138, 0.08);
+  color: #1e398a;
+  border-color: rgba(30, 57, 138, 0.2);
+}
+
+.pill-outbid {
+  background: rgba(255, 153, 0, 0.15);
+  color: #b35300;
+  border-color: rgba(255, 153, 0, 0.35);
+}
+
+.pill-won {
+  background: rgba(46, 204, 113, 0.18);
+  color: #1b7a45;
+  border-color: rgba(46, 204, 113, 0.35);
+}
+
+.legend {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  background: #f9fbff;
+}
+
+.legend h3 {
+  margin: 0 0 8px 0;
+}
+
+.legend ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+@media (max-width: 1024px) {
+  .bids-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .bids-table .table-head,
+  .bids-table .table-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .bids-table .table-head span:nth-child(n + 3),
+  .bids-table .table-row span:nth-child(n + 3) {
+    display: none;
+  }
+  .bids-table .table-row {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+  .bids-table .row-actions {
+    grid-column: span 2;
+  }
+}

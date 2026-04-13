@@ -1,0 +1,101 @@
+/**
+ * index.js
+ * Main auction search page - displays car search form with make/model/auction filters
+ * Shows real-time Japan Standard Time clock and user session info
+ * Implements the core auction search interface from the Autoweb Direct template
+ * Dynamically loads car makes/models and auction houses from JSON data files
+ */
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import Head from 'next/head';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import ClockJST from '../components/ClockJST';
+import SearchForm from '../components/SearchForm';
+import makeModelsData from '../public/make_models.json';
+import auctionsData from '../public/auctions.json';
+
+export default function Home() {
+  const router = useRouter();
+  const [make, setMake] = useState('ALL');
+  const [model, setModel] = useState('ALL');
+  const [auction, setAuction] = useState('ALL');
+  const [user, setUser] = useState({ name: 'HAMIDI' });
+  const [availableModels, setAvailableModels] = useState([]);
+
+  // Update available models when make changes
+  useEffect(() => {
+    if (make && make !== 'ALL' && makeModelsData[make]) {
+      setAvailableModels(makeModelsData[make]);
+      setModel('ALL');
+    } else {
+      setAvailableModels([]);
+      setModel('ALL');
+    }
+  }, [make]);
+
+  const handleLogout = () => {
+    setUser(null);
+    alert('Logged out (placeholder).');
+  };
+
+  const handleLogin = () => {
+    setUser({ name: 'HAMIDI' });
+    alert('Logged in (placeholder).');
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    router.push({
+      pathname: '/results',
+      query: { make, model, auction },
+    });
+  };
+
+  return (
+    <>
+      <Head>
+        <title>ArtisAuc - Auction Direct</title>
+        <meta name="description" content="Your One-Stop Portal to Japan's Auto Auctions" />
+      </Head>
+
+      <div id="container">
+        <Header user={user} onLogin={handleLogin} onLogout={handleLogout} />
+
+        <div id="content01">
+          <div id="intro">
+            <h3 className="in_title">CAR SEARCH</h3>
+            <ClockJST />
+            <div className="terms">
+              <a href="/auction-rules" className="rule" target="_blank">Auction Rule</a><br />
+            </div>
+          </div>
+
+          <div id="sch_body">
+            <div id="box_top"></div>
+            <div id="search_form">
+              <SearchForm
+                make={make}
+                model={model}
+                auction={auction}
+                makeOptions={Object.keys(makeModelsData)}
+                modelOptions={availableModels}
+                auctionOptions={auctionsData.auctions}
+                onMakeChange={setMake}
+                onModelChange={setModel}
+                onAuctionChange={setAuction}
+                onSubmit={handleSearch}
+              />
+            </div>
+          </div>
+        </div>
+
+        <Footer />
+      </div>
+    </>
+  );
+}
+
+
+
