@@ -9,12 +9,61 @@ import SheetViewer from '../../components/SheetViewer';
 import BidPanel from '../../components/BidPanel';
 import SkeletonLot from '../../components/SkeletonLot';
 import { hasMembership } from '../../utils/membership';
-import { mockSearchCars } from '../../lib/mock-api';
+import { mockSearchCars, mockLotList, fetchExternalApi } from '../../lib/mock-api';
 import { mockCars as liveMockCars } from '../../lib/live-mock-data';
+import { ShieldCheck, Info, Clock, FileText, Gavel } from 'lucide-react';
 
-export default function LotDetailPage() {
+export async function getStaticPaths() {
+  const allCars = await mockSearchCars();
+  const carPaths = allCars.map((car) => ({
+    params: { lotId: car.lotId || car.id },
+  }));
+  const livePaths = liveMockCars.map((car) => ({
+    params: { lotId: car.id || car.lotId },
+  }));
+
+  // Fetch PHP API live data to get DB IDs used by the store
+  let apiPaths = [];
+  try {
+    const res = await fetch('http://localhost/ArtisbayCombined/api/get_live_auctions.php');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        apiPaths = data.flatMap(a => {
+          const ids = [];
+          if (a.id != null) ids.push({ params: { lotId: String(a.id) } });
+          if (a.car?.id != null) ids.push({ params: { lotId: String(a.car.id) } });
+          if (a.car?.lotId) ids.push({ params: { lotId: a.car.lotId } });
+          return ids;
+        });
+      }
+    }
+  } catch (_) {}
+
+  let extPaths = [];
+  try {
+    const res = await fetch('http://144.76.203.145/api/?ip=1.2.3.4&json&code=DvemR43s&sql=' + encodeURIComponent('SELECT * FROM main LIMIT 50'));
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        extPaths = data.map((_, idx) => ({ params: { lotId: `ext-${idx}` } }));
+      }
+    }
+  } catch (_) {}
+
+  return {
+    paths: [...carPaths, ...livePaths, ...apiPaths, ...extPaths],
+    fallback: false,
+  };
+}
+
+export async function getStaticProps({ params }) {
+  return { props: { initialLotId: params.lotId } };
+}
+
+export default function LotDetailPage({ initialLotId }) {
   const router = useRouter();
-  const { lotId } = router.query;
+  const lotId = router.query.lotId || initialLotId;
   const [user, setUser] = useState(null);
   const [lot, setLot] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,27 +104,72 @@ export default function LotDetailPage() {
     const fetchLotData = async () => {
       if (lotId && allowed) {
         setLoading(true);
-        // Search in standard mock API data
         const allCars = await mockSearchCars();
-        let foundLot = allCars.find(l => l.lotId === lotId || l.id === lotId);
-        
-        // If not found, search in Live mock data
+        let foundLot = allCars.find(l => l.lotId === lotId || String(l.id) === lotId || String(l.lotId) === lotId);
         if (!foundLot) {
           const liveCar = liveMockCars.find(c => c.id === lotId || c.lotId === lotId);
           if (liveCar) {
+            foundLot = { ...liveCar, lotId: liveCar.id, auctionHouse: 'Live Auction', auctionDate: 'LIVE NOW' };
+          }
+        }
+        if (!foundLot && !lotId.startsWith('ext-')) {
+          try {
+            const r = await fetch('http://localhost/ArtisbayCombined/api/get_live_auctions.php');
+            if (r.ok) {
+              const data = await r.json();
+              const match = data.find(a => String(a.id) === lotId || String(a.car?.id) === lotId || String(a.car?.lotId) === lotId);
+              if (match) {
+                const c = match.car || match;
+                foundLot = {
+                  lotId: c.lotId || match.id,
+                  id: match.id,
+                  year: c.year || '', make: c.make || '', model: c.model || '',
+                  mileage: c.mileage || '', grade: c.grade || '', transmission: c.transmission || '',
+                  auctionHouse: c.auctionHouse || '', auctionDate: c.auctionDate || '',
+                  thumbnail: c.thumbnail || '', chassisNumber: c.chassisNumber || '',
+                  exteriorColor: c.exteriorColor || '', engineSize: c.engineSize || '',
+                  images: c.images || [c.thumbnail], startingBid: match.startingBid || 0,
+                };
+              }
+            }
+          } catch (_) {}
+        }
+        if (!foundLot && lotId.startsWith('ext-')) {
+          let extData = await fetchExternalApi('SELECT * FROM main LIMIT 50');
+          if (!extData.length) {
+            try {
+              const r = await fetch('http://144.76.203.145/api/?ip=1.2.3.4&json&code=DvemR43s&sql=' + encodeURIComponent('SELECT * FROM main LIMIT 50'));
+              if (r.ok) extData = await r.json();
+            } catch (_) {}
+          }
+          const idx = parseInt(lotId.replace('ext-', ''));
+          const extRow = extData[idx];
+          if (extRow) {
             foundLot = {
-              ...liveCar,
-              lotId: liveCar.id,
-              auctionHouse: 'Live Auction',
-              auctionDate: 'LIVE NOW'
+              lotId: lotId,
+              id: lotId,
+              year: extRow.YEAR || '',
+              make: extRow.MARKA_NAME || '',
+              model: extRow.MODEL_NAME || '',
+              mileage: extRow.MILEAGE || '',
+              grade: extRow.RATE || '',
+              transmission: extRow.KPP || '',
+              auctionHouse: extRow.TOWN || 'External Auction',
+              auctionDate: extRow.AUCTION_DATE || '',
+              thumbnail: extRow.IMAGES || '',
+              chassisNumber: extRow.KUZOV || '',
+              exteriorColor: extRow.COLOR || '',
+              engineSize: extRow.ENG_V ? extRow.ENG_V + 'cc' : '',
+              fuelType: extRow.FUEL || '',
+              images: extRow.IMAGES ? [extRow.IMAGES] : [],
+              startingBid: parseFloat(extRow.START) || 0,
+              _source: 'external_api',
             };
           }
         }
-        
         if (foundLot) {
           setLot({
             ...foundLot,
-            // Add extra fields needed for detail page if not in mock
             lotId: foundLot.lotId || foundLot.id,
             chassis: foundLot.chassis || foundLot.chassisNumber || 'GRS214-0012345',
             fuel: foundLot.fuel || foundLot.fuelType || 'Gasoline',
@@ -93,178 +187,185 @@ export default function LotDetailPage() {
     fetchLotData();
   }, [lotId, allowed]);
 
-  const handleAddToBids = ({ bidAmount, maxCeiling, customerNote, selectedGroup, selectedUnits }) => {
-    // We remove the mandatory redirect to /login and /my-bids
-    // to allow the BidPanel to show its success state.
-    
-    // Fallback user if not logged in
-    const currentUser = user || { name: 'Guest' };
-    
-    console.log("Bid added locally to localStorage for redundancy:", {
-      lotId: lot.lotId,
-      bidAmount,
-      selectedGroup,
-      selectedUnits
-    });
-
-    // We still keep localStorage for backup, but the main work
-    // is now handled by the BidPanel's direct API call to PHP.
-    const bid = {
-      lotId: lot.lotId,
-      auction: lot.auctionHouse,
-      auctionHouse: lot.auctionHouse,
-      year: lot.year,
-      make: lot.make,
-      model: lot.model,
-      vehicle: `${lot.year} ${lot.make} ${lot.model}`,
-      chassis: lot.chassis,
-      fuel: lot.fuel,
-      grade: lot.grade,
-      mileage: lot.mileage,
-      color: lot.color,
-      bidAmount,
-      maxCeiling,
-      customerNote,
-      group: selectedGroup,
-      units: selectedUnits,
-      status: 'Pending',
-      addedAt: new Date().toISOString()
-    };
+  const handleAddToBids = (bidData) => {
+    const bid = { ...bidData, lotId: lot.lotId, addedAt: new Date().toISOString(), status: 'Pending' };
     const existingBids = JSON.parse(localStorage.getItem('myBids') || '[]');
     existingBids.push(bid);
     localStorage.setItem('myBids', JSON.stringify(existingBids));
   };
 
-  if (checking) {
+  if (checking || loading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header user={user} onLogin={() => router.push('/login')} onLogout={() => { if (typeof window !== 'undefined') localStorage.removeItem('artisauc_user'); setUser(null); }} />
-        <div className="flex-1 flex items-center justify-center p-12 bg-gray-50">
-          <div className="w-12 h-12 border-4 border-blue-100 border-t-[#1e398a] rounded-full animate-spin"></div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!allowed) return null;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col w-full bg-white">
         <Header user={user} onLogin={() => router.push('/login')} onLogout={() => { localStorage.removeItem('artisauc_user'); setUser(null); }} />
-        <SkeletonLot />
+        <div className="flex-1 flex items-center justify-center p-12">{loading ? <SkeletonLot /> : <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-100 border-t-blue-600"></div>}</div>
         <Footer />
       </div>
     );
   }
 
-  if (!lot) return (
-    <div className="min-h-screen flex flex-col">
-      <Header user={user} onLogin={() => router.push('/login')} onLogout={() => { localStorage.removeItem('artisauc_user'); setUser(null); }} />
-      <div className="flex-1 flex flex-col items-center justify-center p-12 bg-gray-50">
-        <h2 className="text-2xl font-black text-[#1e398a] mb-2 uppercase">LOT NOT FOUND</h2>
-        <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">The requested vehicle is unavailable</p>
-      </div>
-      <Footer />
-    </div>
-  );
+  if (!allowed || !lot) return null;
 
   const specRows = [
+    { label: 'Auction', value: lot.auctionHouse },
+    { label: 'Lot No.', value: lot.lotId },
     { label: 'Year', value: lot.year },
     { label: 'Make', value: lot.make },
     { label: 'Model', value: lot.model },
-    { label: 'Chassis', value: lot.chassis },
-    { label: 'Mileage', value: lot.mileage },
     { label: 'Grade', value: lot.grade },
-    { label: 'Fuel', value: lot.fuel },
-    { label: 'Transmission', value: lot.transmission },
-    { label: 'Color', value: lot.color },
-    { label: 'Steering', value: lot.steering },
+    { label: 'Mileage', value: lot.mileage },
     { label: 'Engine', value: lot.engine },
-    { label: 'Start Price', value: lot.startPrice },
+    { label: 'Chassis', value: lot.chassis },
+    { label: 'Trans', value: lot.transmission },
+    { label: 'Color', value: lot.color },
+    { label: 'Price', value: lot.startPrice },
   ];
 
+  const isAdmin = user?.userId?.toLowerCase() === 'admin';
+
   return (
-    <>
+    <div className="min-h-screen bg-slate-50 flex flex-col w-full overflow-x-hidden">
       <Head>
-        <title>{lot.year} {lot.make} {lot.model} - Lot {lot.lotId} | ArtisAuc</title>
+        <title>{lot.year} {lot.make} {lot.model} - Lot {lot.lotId}</title>
       </Head>
+      
       <Header user={user} onLogin={() => router.push('/login')} onLogout={() => { localStorage.removeItem('artisauc_user'); setUser(null); }} />
-      <main className="lot-page">
-        <div className="bg-gradient-to-br from-[#1e398a] to-[#1d4ed8] py-12 md:py-20 text-white px-6">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="text-center md:text-left">
-              <h1 className="text-3xl md:text-5xl font-black tracking-tight mb-4 uppercase leading-none">
-                {lot.year} {lot.make} {lot.model}
-              </h1>
-              <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                <span className="bg-white/10 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">LOT: {lot.lotId}</span>
-                <span className="bg-orange-400 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">{lot.auctionHouse}</span>
-                <span className="bg-white/10 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">{lot.auctionDate}</span>
+
+      <main className="flex-1 w-full pb-24 md:pb-12">
+        {/* Header Section */}
+        <div className="bg-[#1e398a] text-white px-4 py-8 md:py-16">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="text-center md:text-left w-full">
+              <h1 className="text-2xl md:text-5xl font-black uppercase tracking-tight leading-tight">{lot.year} {lot.make} {lot.model}</h1>
+              <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
+                <span className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-black border border-white/10 uppercase tracking-widest">LOT: {lot.lotId}</span>
+                <span className="bg-orange-400 px-3 py-1 rounded-full text-[10px] font-black shadow-lg uppercase tracking-widest">{lot.auctionHouse}</span>
+                <span className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-black border border-white/10 uppercase tracking-widest">{lot.auctionDate}</span>
               </div>
             </div>
-            <div className="bg-white/10 p-6 rounded-3xl border border-white/10 backdrop-blur-md text-center md:text-right w-full md:w-auto">
-              <div className="text-[10px] font-black opacity-70 uppercase tracking-widest mb-1">Japan Standard Time</div>
-              <div className="text-2xl font-mono font-bold text-orange-400">{currentTime}</div>
+            <div className="bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-md text-center md:text-right shrink-0">
+              <div className="text-[10px] font-black opacity-60 uppercase tracking-widest mb-1">Japan Time</div>
+              <div className="text-xl md:text-2xl font-mono font-bold text-orange-400">{currentTime}</div>
             </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 -mt-10">
-          <div className="grid lg:grid-cols-3 gap-8 items-start">
-            {/* Left Media Column */}
-            <div className="lg:col-span-2 space-y-8">
-              <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 shadow-xl border border-gray-100 dark:border-slate-800 overflow-hidden">
-                <div className="relative h-[300px] md:h-[500px] bg-gray-50 dark:bg-slate-800 rounded-[2rem] overflow-hidden mb-6 flex items-center justify-center">
-                  <Image 
-                    src={lot.images[currentImage]} 
-                    alt={lot.model} 
-                    fill 
-                    unoptimized={true}
-                    className="object-contain p-4" 
-                  />
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10">
+            
+            {/* Left/Main Content: 8 columns on large screens */}
+            <div className="lg:col-span-8 space-y-6">
+              
+              {/* Media Gallery */}
+              <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100">
+                <div className="relative h-[250px] md:h-[500px] bg-slate-50 rounded-2xl overflow-hidden mb-4 flex items-center justify-center border border-gray-50">
+                  <img src={lot.images[currentImage]} alt={lot.model} className="max-w-full max-h-full object-contain" />
                 </div>
-                <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar">
+                <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                   {lot.images.map((img, idx) => (
-                    <button 
-                      key={idx} 
-                      onClick={() => setCurrentImage(idx)}
-                      className={`relative w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden border-4 transition-all ${idx === currentImage ? 'border-orange-400' : 'border-transparent opacity-60 hover:opacity-100'}`}
-                    >
-                      <Image src={img} alt="" fill unoptimized={true} className="object-cover" />
+                    <button key={idx} onClick={() => setCurrentImage(idx)} className={`relative w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all ${idx === currentImage ? 'border-orange-400' : 'border-transparent opacity-60'}`}>
+                      <img src={img} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
               </div>
-              <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-xl border border-gray-100 dark:border-slate-800 overflow-hidden">
-                <h2 className="text-xl font-black text-[#1e398a] dark:text-blue-400 mb-6 uppercase tracking-tight">Inspection Sheet</h2>
-                <SheetViewer sheetUrl={lot.sheetUrl} notes="Official auction house verification documents." />
-              </div>
-            </div>
 
-            {/* Right Details Column - Sticky */}
-            <div className="space-y-8 sticky top-24">
-              <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-xl border border-gray-100 dark:border-slate-800">
-                <h2 className="text-xl font-black text-[#1e398a] dark:text-blue-400 mb-6 uppercase tracking-tight">Specifications</h2>
-                <div className="space-y-4">
+              {/* Mobile Specs: Visible only on small screens, comes after gallery */}
+              <div className="lg:hidden bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <h2 className="text-lg font-black text-[#1e398a] mb-4 uppercase flex items-center gap-2"><Info size={18} /> Specifications</h2>
+                <div className="grid grid-cols-2 gap-4">
                   {specRows.map((spec, i) => (
-                    <div key={i} className="flex justify-between items-center border-b border-gray-50 dark:border-slate-800 last:border-0">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{spec.label}</span>
-                      <span className="text-sm font-bold text-[#1e398a] dark:text-blue-200">{spec.value}</span>
+                    <div key={i} className="border-b border-slate-50 pb-2">
+                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{spec.label}</div>
+                      <div className="text-xs font-bold text-slate-800 truncate">{spec.value}</div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-xl border border-gray-100 dark:border-slate-800">
-                <h2 className="text-xl font-black text-[#1e398a] dark:text-blue-400 mb-6 uppercase tracking-tight">Place Your Bid</h2>
+
+              {/* Auction Schedule */}
+              <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
+                <h2 className="text-lg font-black text-[#1e398a] mb-6 uppercase flex items-center gap-2"><Clock size={18} /> Auction Schedule</h2>
+                <div className="space-y-4">
+                  {[
+                    { time: '09:00', event: 'Final Inspection', status: 'done' },
+                    { time: '11:30', event: 'Public Preview', status: 'done' },
+                    { time: '14:45', event: 'Bidding Begins', status: 'now' },
+                    { time: '17:00', event: 'Auction Close', status: 'next' },
+                  ].map((s, idx) => (
+                    <div key={idx} className="flex items-center gap-4">
+                      <div className={`w-2 h-2 rounded-full ${s.status === 'done' ? 'bg-green-500' : s.status === 'now' ? 'bg-orange-400 animate-pulse' : 'bg-slate-200'}`}></div>
+                      <div className="font-mono text-xs font-bold w-12 text-slate-400">{s.time}</div>
+                      <div className={`text-sm font-bold flex-1 ${s.status === 'now' ? 'text-[#1e398a]' : 'text-slate-600'}`}>{s.event}</div>
+                      <div className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${s.status === 'done' ? 'bg-green-50 text-green-600' : s.status === 'now' ? 'bg-orange-50 text-orange-600' : 'bg-slate-50 text-slate-400'}`}>{s.status}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Inspection Sheet */}
+              <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
+                <h2 className="text-lg font-black text-[#1e398a] mb-6 uppercase flex items-center gap-2"><FileText size={18} /> Inspection Sheet</h2>
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-center justify-center min-h-[300px]">
+                   <img src={lot.sheetUrl} alt="Inspection" className="max-w-full rounded-lg shadow-sm" />
+                </div>
+              </div>
+
+              {/* Admin Notes */}
+              {isAdmin && (
+                <div className="bg-orange-50 rounded-3xl p-6 md:p-8 border border-orange-100">
+                  <div className="flex items-center gap-2 mb-4 text-orange-900"><ShieldCheck size={20} /> <span className="font-black uppercase tracking-tight">Staff Notes</span></div>
+                  <p className="text-sm font-medium text-orange-800 leading-relaxed italic bg-white/50 p-4 rounded-xl">"Recommended for export. Condition matches sheet. Minor driver seat wear."</p>
+                </div>
+              )}
+            </div>
+
+            {/* Right Sidebar: 4 columns on large screens */}
+            <div className="hidden lg:block lg:col-span-4 space-y-6 sticky top-24">
+              <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+                <h2 className="text-xl font-black text-[#1e398a] mb-6 uppercase tracking-tight">Specifications</h2>
+                <div className="space-y-4">
+                  {specRows.map((spec, i) => (
+                    <div key={i} className="flex justify-between items-center border-b border-slate-50 pb-2 last:border-0">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{spec.label}</span>
+                      <span className="text-sm font-bold text-[#1e398a] truncate ml-4">{spec.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div id="bid-section-desktop" className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
+                <h2 className="text-xl font-black text-[#1e398a] mb-6 uppercase tracking-tight">Place Your Bid</h2>
                 <BidPanel lot={lot} user={user} onSubmit={handleAddToBids} />
               </div>
             </div>
+
           </div>
         </div>
+
+        {/* Mobile Bid Section: Anchor for sticky bar */}
+        <div id="bid-section-mobile" className="lg:hidden px-4 pb-12">
+          <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
+             <h2 className="text-lg font-black text-[#1e398a] mb-4 uppercase flex items-center gap-2"><Gavel size={18} /> Place Bid</h2>
+             <BidPanel lot={lot} user={user} onSubmit={handleAddToBids} />
+          </div>
+        </div>
+
+        {/* Mobile Sticky Bar */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 p-4 z-50 flex items-center justify-between gap-4 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+          <div className="flex flex-col">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Start Price</span>
+            <span className="text-lg font-black text-[#1e398a]">{lot.startPrice}</span>
+          </div>
+          <button 
+            onClick={() => document.getElementById('bid-section-mobile')?.scrollIntoView({ behavior: 'smooth' })}
+            className="flex-1 bg-[#1e398a] text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
+          >
+            BID NOW
+          </button>
+        </div>
       </main>
+
       <Footer />
-    </>
+    </div>
   );
 }

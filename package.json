@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev -p 3002",
     "build": "next build",
+    "predeploy": "npm run build && echo. > out/.nojekyll",
+    "deploy": "gh-pages -d out -t",
     "start": "next start",
     "lint": "next lint"
   },
@@ -22,6 +24,7 @@
     "autoprefixer": "^10.4.27",
     "eslint-config-next": "^16.2.1",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "gh-pages": "^6.3.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.19",
     "typescript": "^6.0.2"

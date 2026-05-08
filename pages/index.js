@@ -24,8 +24,25 @@ export default function HomePage() {
   const [selectedModels, setSelectedModels] = useState([]);
   const [selectedAuctions, setSelectedAuctions] = useState([]);
   const [currentTime, setCurrentTime] = useState('');
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const makes = Object.keys(makeModelsData);
+
+  // Load saved filters on mount
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('artisauc_last_search');
+    if (savedFilters) {
+      try {
+        const { make: savedMake, models: savedModels, auctions: savedAuctions } = JSON.parse(savedFilters);
+        if (savedMake) setMake(savedMake);
+        if (savedModels) setSelectedModels(savedModels);
+        if (savedAuctions) setSelectedAuctions(savedAuctions);
+      } catch (e) {
+        console.error("Failed to load saved filters", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
 
   // Sync User Session
   useEffect(() => {
@@ -53,11 +70,31 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Save filters when they change
+  useEffect(() => {
+    if (isLoaded) {
+      const filtersToSave = {
+        make,
+        models: selectedModels,
+        auctions: selectedAuctions
+      };
+      localStorage.setItem('artisauc_last_search', JSON.stringify(filtersToSave));
+    }
+  }, [make, selectedModels, selectedAuctions, isLoaded]);
+
   // Logic to update models list when make changes
   useEffect(() => {
     if (make && makeModelsData[make]) {
       setModels(makeModelsData[make]);
-      setSelectedModels([]); // Reset selection when make changes
+      // If we're restoring from localStorage, don't reset selectedModels immediately
+      // This is a bit tricky, but since we set make first, this effect runs.
+      // We only reset if the selected models aren't in the new make's model list.
+      const validModels = selectedModels.filter(m => makeModelsData[make].includes(m));
+      if (validModels.length !== selectedModels.length && isLoaded) {
+        // Only reset if we're not in the middle of initial loading
+        // or if none of the selected models match the new make
+        if (validModels.length === 0) setSelectedModels([]);
+      }
     } else {
       setModels([]);
     }

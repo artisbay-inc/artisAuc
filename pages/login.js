@@ -6,7 +6,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import Image from 'next/image';
 import Link from 'next/link';
 import { User, Lock, ArrowRight, ShieldCheck, Info } from 'lucide-react';
 import Header from '../components/Header';
@@ -63,7 +62,7 @@ export default function LoginPage() {
             {/* Logo/Brand Header */}
             <div className="text-center mb-10">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-[2rem] shadow-xl mb-6 border border-gray-50">
-                <Image src="/logo.png" alt="Logo" width={50} height={50} className="object-contain" />
+                <img src="/logo.png" alt="Logo" width="50" height="50" className="object-contain" />
               </div>
               <h1 className="text-3xl font-black text-[#1e398a] tracking-tight uppercase mb-2">Welcome Back</h1>
               <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em]">Secure Auction Gateway</p>

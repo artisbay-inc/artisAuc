@@ -9,9 +9,9 @@ import { useEffect, useState } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ResultsGrid from '../../components/ResultsGrid';
-import { mockSearchCars, mockSearchBikes, mockLotList } from '../../lib/mock-api';
+import { mockSearchCars, mockSearchBikes, mockLotList, fetchExternalApi } from '../../lib/mock-api';
 import useStore from '../../store';
-import { LayoutGrid, List } from 'lucide-react';
+import { LayoutGrid, List, Table } from 'lucide-react';
 
 function ResultsPage() {
   const router = useRouter();
@@ -34,10 +34,22 @@ function ResultsPage() {
     const fetchData = async () => {
       setLoading(true);
       const { make = 'ALL', model = 'ALL', auction = 'ALL', type = 'car' } = router.query || {};
+      
       const fetcher = type === 'bike' ? mockSearchBikes : mockSearchCars;
       const cars = await fetcher({ make, model, auction });
-      setResults(cars);
-      setFilteredResults(cars);
+      
+      // Also fetch from external API and merge
+      const externalFieldMap = {
+        make: 'MARKA_NAME', model: 'MODEL_NAME', year: 'YEAR',
+        mileage: 'MILEAGE', grade: 'RATE', transmission: 'KPP',
+        auctionHouse: 'TOWN', lotId: 'LOT', thumbnail: 'IMAGES',
+        exteriorColor: 'COLOR', chassisNumber: 'KUZOV',
+      };
+      const externalData = await fetchExternalApi('SELECT * FROM main LIMIT 20', externalFieldMap);
+      const allData = [...cars, ...externalData];
+      
+      setResults(allData);
+      setFilteredResults(allData);
       setLoading(false);
       setActiveFilter('ALL');
     };
@@ -130,6 +142,12 @@ function ResultsPage() {
                 className={`p-1.5 md:p-2 rounded-md md:rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-[#1e398a] shadow-lg' : 'text-white/60 hover:text-white'}`}
               >
                 <List size={14} />
+              </button>
+              <button 
+                onClick={() => setViewMode('table')}
+                className={`hidden md:block p-1.5 md:p-2 rounded-md md:rounded-lg transition-all ${viewMode === 'table' ? 'bg-white text-[#1e398a] shadow-lg' : 'text-white/60 hover:text-white'}`}
+              >
+                <Table size={14} />
               </button>
             </div>
           </div>

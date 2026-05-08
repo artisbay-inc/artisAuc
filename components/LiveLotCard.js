@@ -41,6 +41,18 @@ export default function LiveLotCard({ auction }) {
           Grade {car.grade || '4.5'}
         </div>
         
+        {auction._source && (
+          <div className={`absolute top-3 right-12 px-2 py-1 rounded-md shadow-md text-[8px] font-black uppercase tracking-wider ${
+            auction._source === 'external_api' 
+              ? 'bg-purple-600 text-white' 
+              : auction._source === 'local_api'
+              ? 'bg-green-600 text-white'
+              : 'bg-gray-500 text-white'
+          }`}>
+            {auction._source === 'external_api' ? 'External' : auction._source === 'local_api' ? 'Local' : 'Mock'}
+          </div>
+        )}
+        
         <button
           onClick={() => toggleWatchlist(car.id)}
           className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors z-10"

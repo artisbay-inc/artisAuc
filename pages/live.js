@@ -11,15 +11,18 @@ import useAuctionStore from '../store/auctionStore';
 export default function LiveAuctionsPage() {
   const { 
     fetchAuctions, 
+    fetchExternalAuctions,
     getFilteredAuctions, 
     connectionStatus,
     loading,
+    externalLoading,
     latencyMs,
     connectWebSocket,
     currentCurrency,
     setCurrency,
     clearFilters,
     auctions,
+    externalAuctions,
     filters
   } = useAuctionStore();
   
@@ -34,6 +37,7 @@ export default function LiveAuctionsPage() {
     }
     
     fetchAuctions();
+    fetchExternalAuctions('SELECT * FROM main LIMIT 50');
     connectWebSocket();
   }, []);
 
@@ -56,7 +60,7 @@ export default function LiveAuctionsPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const filteredAuctions = useMemo(() => getFilteredAuctions(), [auctions, filters, getFilteredAuctions]);
+  const filteredAuctions = useMemo(() => getFilteredAuctions(), [auctions, externalAuctions, filters, getFilteredAuctions]);
 
   return (
     <>
@@ -125,6 +129,7 @@ export default function LiveAuctionsPage() {
                   </div>
                   <div className="bg-white/10 px-3 md:px-4 py-2 rounded-xl border border-white/10 flex items-center gap-2">
                     <span className="text-sm md:text-lg font-black">{loading ? '...' : filteredAuctions.length}</span>
+                    {externalLoading && <span className="text-[8px] text-blue-200 animate-pulse ml-1">+loading</span>}
                     <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest opacity-70">Lots</span>
                   </div>
                 </div>

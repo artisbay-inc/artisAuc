@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { mockAuctions, mockCars } from '../lib/live-mock-data';
+import { fetchExternalApi } from '../lib/mock-api';
 import { applyFilters, sortAuctions } from '../utils/live-filters';
 
 const DEFAULT_FILTERS = {
@@ -162,9 +163,10 @@ const useAuctionStore = create(
             if (response.ok) {
               const data = await response.json();
               if (Array.isArray(data) && data.length > 0) {
+                const tagged = data.map(a => ({ ...a, _source: 'local_api' }));
                 set({ 
-                  auctions: data, 
-                  cars: data.map(a => a.car),
+                  auctions: tagged, 
+                  cars: tagged.map(a => ({ ...a.car, _source: 'local_api' })),
                   loading: false 
                 });
                 return;
@@ -179,6 +181,7 @@ const useAuctionStore = create(
           
           const enrichedCars = mockCars.map(car => ({
             ...car,
+            _source: 'mock',
             displayTitle: `${car.year} ${car.make} ${car.model}`,
             shortChassis: car.chassisNumber?.slice(-6) || '',
             imageThumbnail: car.images?.[0] || '',
@@ -190,6 +193,7 @@ const useAuctionStore = create(
             
             return {
               ...auction,
+              _source: 'mock',
               car: car,
               bidIncrement: auction.currentBid < 1000 ? 50 : 100,
             };
@@ -198,9 +202,80 @@ const useAuctionStore = create(
           set({ auctions: enrichedAuctions, cars: enrichedCars, loading: false });
         },
         
+        externalAuctions: [],
+        externalLoading: false,
+        externalFieldMap: {
+          lotId: 'LOT', year: 'YEAR', make: 'MARKA_NAME', model: 'MODEL_NAME',
+          mileage: 'MILEAGE', grade: 'RATE', transmission: 'KPP',
+          auctionHouse: 'TOWN', thumbnail: 'IMAGES',
+          currentBid: 'START', startingBid: 'START', status: 'STATUS',
+          chassisNumber: 'KUZOV', exteriorColor: 'COLOR',
+          endTime: 'AUCTION_DATE',
+        },
+
+        setExternalFieldMap: (map) => set({ externalFieldMap: { ...get().externalFieldMap, ...map } }),
+
+        fetchExternalAuctions: async (sqlQuery = 'SELECT * FROM main LIMIT 10') => {
+          set({ externalLoading: true });
+          const fieldMap = get().externalFieldMap;
+
+          try {
+            const rows = await fetchExternalApi(sqlQuery);
+            if (rows.length > 0) {
+              const auctions = rows.map((row, idx) => {
+                const imgRaw = row[fieldMap.thumbnail] || '';
+                const images = imgRaw ? [imgRaw] : [];
+
+                const car = {
+                  id: `ext-${idx}`,
+                  _source: 'external_api',
+                  make: row[fieldMap.make] || '',
+                  model: row[fieldMap.model] || '',
+                  year: row[fieldMap.year] || '',
+                  mileage: parseInt(row[fieldMap.mileage]) || 0,
+                  grade: row[fieldMap.grade] || '',
+                  transmission: row[fieldMap.transmission] || '',
+                  engineSize: row['ENG_V'] ? row['ENG_V'] + 'cc' : '',
+                  chassisNumber: row[fieldMap.chassisNumber] || '',
+                  exteriorColor: row[fieldMap.exteriorColor] || '',
+                  interiorColor: row['INTERIOR'] || '',
+                  fuelType: row['FUEL'] || '',
+                  images,
+                  imageThumbnail: images[0] || '',
+                  shortChassis: (row[fieldMap.chassisNumber] || '').slice(-6) || '',
+                  displayTitle: `${row[fieldMap.year] || ''} ${row[fieldMap.make] || ''} ${row[fieldMap.model] || ''}`,
+                };
+
+                return {
+                  id: `ext-${idx}`,
+                  _source: 'external_api',
+                  car,
+                  lotId: row[fieldMap.lotId] || `EXT-${idx}`,
+                  currentBid: parseFloat(row[fieldMap.currentBid]) || 0,
+                  startingBid: parseFloat(row[fieldMap.startingBid]) || 0,
+                  endTime: row[fieldMap.endTime] ? new Date(row[fieldMap.endTime]) : new Date(Date.now() + 86400000),
+                  status: row[fieldMap.status] || 'Live',
+                  bidderCount: parseInt(row['BIDDER_COUNT']) || 0,
+                  reserveMet: row['RESERVE_MET'] === '1' || false,
+                  buyNowPrice: parseFloat(row['BUY_NOW']) || 0,
+                  bidIncrement: 100,
+                };
+              });
+
+              set({ externalAuctions: auctions, externalLoading: false });
+            } else {
+              set({ externalAuctions: [], externalLoading: false });
+            }
+          } catch (error) {
+            console.warn("Failed to fetch external auctions:", error);
+            set({ externalAuctions: [], externalLoading: false });
+          }
+        },
+        
         getFilteredAuctions: () => {
           const state = get();
-          const filtered = applyFilters(state.auctions, { ...state.filters, watchlist: state.watchlist });
+          const allAuctions = [...state.auctions, ...state.externalAuctions];
+          const filtered = applyFilters(allAuctions, { ...state.filters, watchlist: state.watchlist });
           const sorted = sortAuctions(filtered, state.filters.sortBy, state.filters.sortDirection);
           return sorted;
         },

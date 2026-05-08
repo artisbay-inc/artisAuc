@@ -50,84 +50,66 @@ export default function DevSetup() {
         <title>Dev Setup - ArtisAuc</title>
       </Head>
 
-      <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
-        <h1 style={{ color: '#2c5aa0' }}>Development Setup</h1>
-        <p style={{ color: '#666', marginBottom: '30px' }}>
+      <div className="p-10 max-w-3xl mx-auto">
+        <h1 className="text-[#2c5aa0] text-3xl font-bold mb-4">Development Setup</h1>
+        <p className="text-[#666] mb-8">
           Set up test membership and deposit data for development
         </p>
 
-        <div style={{ background: '#fff3cd', padding: '20px', borderRadius: '8px', marginBottom: '30px', border: '1px solid #ffc107' }}>
-          <h3 style={{ marginTop: 0 }}>⚠️ Development Only</h3>
-          <p style={{ margin: 0 }}>This page is for development purposes only. Remove before deploying to production.</p>
+        <div className="bg-[#fff3cd] p-5 rounded-lg mb-8 border border-[#ffc107]">
+          <h3 className="mt-0 font-bold">⚠️ Development Only</h3>
+          <p className="m-0">This page is for development purposes only. Remove before deploying to production.</p>
         </div>
 
         {currentMembership ? (
-          <div style={{ background: '#d4edda', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #28a745' }}>
-            <h3 style={{ marginTop: 0, color: '#155724' }}>Current Membership</h3>
-            <pre style={{ background: 'white', padding: '15px', borderRadius: '4px', overflow: 'auto' }}>
+          <div className="bg-[#d4edda] p-5 rounded-lg mb-5 border border-[#28a745]">
+            <h3 className="mt-0 text-[#155724] font-bold">Current Membership</h3>
+            <pre className="bg-white p-4 rounded mt-2 overflow-auto text-sm">
               {JSON.stringify(currentMembership, null, 2)}
             </pre>
           </div>
         ) : (
-          <div style={{ background: '#f8d7da', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #dc3545' }}>
-            <p style={{ margin: 0, color: '#721c24' }}>No membership data found</p>
+          <div className="bg-[#f8d7da] p-5 rounded-lg mb-5 border border-[#dc3545]">
+            <p className="m-0 text-[#721c24]">No membership data found</p>
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '15px', marginBottom: '30px' }}>
+        <div className="flex gap-4 mb-8">
           <button
             onClick={setupTestMembership}
-            style={{
-              padding: '12px 24px',
-              background: '#27ae60',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '16px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
+            className="px-6 py-3 bg-[#27ae60] text-white border-none rounded cursor-pointer font-bold text-base hover:bg-[#219150] transition-colors"
           >
             Setup Test Membership
           </button>
 
           <button
             onClick={clearTestData}
-            style={{
-              padding: '12px 24px',
-              background: '#e74c3c',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '16px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
+            className="px-6 py-3 bg-[#e74c3c] text-white border-none rounded cursor-pointer font-bold text-base hover:bg-[#c0392b] transition-colors"
           >
             Clear Test Data
           </button>
         </div>
 
         {status && (
-          <div style={{ background: '#f0f4f8', padding: '15px', borderRadius: '8px', fontSize: '16px' }}>
+          <div className="bg-[#f0f4f8] p-4 rounded-lg text-base mb-8">
             {status}
           </div>
         )}
 
-        <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid #ddd' }} />
+        <hr className="my-10 border-0 border-t border-[#ddd]" />
 
         <div>
-          <h3>Test URLs</h3>
-          <ul style={{ lineHeight: '2' }}>
-            <li><a href="/" style={{ color: '#2c5aa0' }}>Home (Car Search)</a></li>
-            <li><a href="/bike-search" style={{ color: '#2c5aa0' }}>Bike Search</a></li>
-            <li><a href="/results?make=TOYOTA&model=ALL&auction=ALL AUCTIONS" style={{ color: '#2c5aa0' }}>Search Results</a></li>
-            <li><a href="/lot/LOT-001" style={{ color: '#2c5aa0' }}>Lot Detail</a></li>
-            <li><a href="/my-bids" style={{ color: '#2c5aa0' }}>My Bids</a></li>
-            <li><a href="/membership" style={{ color: '#2c5aa0' }}>Membership Info</a></li>
-            <li><a href="/auction-rules" style={{ color: '#2c5aa0' }}>Auction Rules</a></li>
-            <li><a href="/terms/artisauc" style={{ color: '#2c5aa0' }}>Terms of Service</a></li>
-            <li><a href="/privacy/artisauc" style={{ color: '#2c5aa0' }}>Privacy Policy</a></li>
+          <h3 className="text-xl font-bold mb-4">Test URLs</h3>
+          <ul className="list-disc ml-5 space-y-2">
+            <li><a href="/" className="text-[#2c5aa0] hover:underline">Home (Car Search)</a></li>
+            <li><a href="/bike-search" className="text-[#2c5aa0] hover:underline">Bike Search</a></li>
+            <li><a href="/results?make=TOYOTA&model=ALL&auction=ALL AUCTIONS" className="text-[#2c5aa0] hover:underline">Search Results</a></li>
+            <li><a href="/lot/USS-241122-01" className="text-[#2c5aa0] hover:underline">Lot Detail</a></li>
+            <li><a href="/my-bids" className="text-[#2c5aa0] hover:underline">My Bids</a></li>
+            <li><a href="/membership" className="text-[#2c5aa0] hover:underline">Membership Info</a></li>
+            <li><a href="/auction-rules" className="text-[#2c5aa0] hover:underline">Auction Rules</a></li>
+            <li><a href="/terms/artisauc" className="text-[#2c5aa0] hover:underline">Terms of Service</a></li>
+            <li><a href="/privacy/artisauc" className="text-[#2c5aa0] hover:underline">Privacy Policy</a></li>
           </ul>
         </div>
       </div>

@@ -4,7 +4,6 @@
  * Matches the modern, premium Artisbay branding.
  */
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { Gauge, Shield, Zap, ExternalLink, Heart, Scale } from 'lucide-react';
 import useStore from '../store';
@@ -18,23 +17,38 @@ export default function LotCard({ lot, viewMode = 'list' }) {
   const isInComparison = comparisonList.some(item => item.lotId === lotId);
 
   return (
-    <article className={`lot-card ${viewMode} group`}>
-      <div className="lot-card-thumb">
-        <Image
+    <article className={`lot-card ${viewMode} group relative`}>
+      {/* Primary Link Overlay - Makes the entire card clickable */}
+      <Link href={`/lot/${lotId}/`} className="absolute inset-0 z-10">
+        <span className="sr-only">View Details for {year} {make} {model}</span>
+      </Link>
+
+      <div className="lot-card-thumb relative bg-[#f8fafc] flex-shrink-0 overflow-hidden">
+        <img
           src={thumbnail || '/images/placeholder-car.svg'}
           alt={`${make} ${model}`}
-          fill
-          unoptimized={true}
-          className="lot-card-thumb-img transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="lot-badge">
           {grade || 'N/A'}
         </div>
         
-        {/* Quick Actions Overlay */}
-        <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        {lot._source && (
+          <div className={`absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider z-20 shadow ${
+            lot._source === 'external_api' 
+              ? 'bg-purple-600 text-white' 
+              : lot._source === 'local_api'
+              ? 'bg-green-600 text-white'
+              : 'bg-gray-500 text-white'
+          }`}>
+            {lot._source === 'external_api' ? 'API' : lot._source === 'local_api' ? 'Local' : 'Mock'}
+          </div>
+        )}
+        
+        {/* Quick Actions Overlay - High z-index to stay interactive */}
+        <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
           <button 
-            onClick={(e) => { e.preventDefault(); toggleFavorite(lotId); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(lotId); }}
             className={`p-1.5 rounded-full shadow-lg transition-all ${isFavorite ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-600 hover:bg-white'}`}
             title={isFavorite ? 'Remove' : 'Add to Watchlist'}
           >
@@ -43,6 +57,7 @@ export default function LotCard({ lot, viewMode = 'list' }) {
           <button 
             onClick={(e) => { 
               e.preventDefault(); 
+              e.stopPropagation();
               isInComparison ? removeFromComparison(lotId) : addToComparison(lot); 
             }}
             className={`p-1.5 rounded-full shadow-lg transition-all ${isInComparison ? 'bg-blue-600 text-white' : 'bg-white/90 text-gray-600 hover:bg-white'}`}
@@ -85,8 +100,8 @@ export default function LotCard({ lot, viewMode = 'list' }) {
           </div>
         </div>
 
-        <div className="lot-card-actions">
-          <Link href={`/lot/${encodeURIComponent(lotId)}`} className="btn-view">
+        <div className="lot-card-actions relative z-20">
+          <Link href={`/lot/${lotId}/`} className="btn-view">
             <span>Details</span>
             <ExternalLink size={12} />
           </Link>
@@ -121,9 +136,6 @@ export default function LotCard({ lot, viewMode = 'list' }) {
 
         .lot-card-thumb {
           position: relative;
-          background: var(--surface);
-          flex-shrink: 0;
-          overflow: hidden;
         }
 
         .lot-card.list .lot-card-thumb {
@@ -134,10 +146,6 @@ export default function LotCard({ lot, viewMode = 'list' }) {
         .lot-card.grid .lot-card-thumb {
           width: 100%;
           aspect-ratio: 16/9;
-        }
-
-        :global(.lot-card-thumb-img) {
-          object-fit: cover;
         }
 
         .lot-badge {
