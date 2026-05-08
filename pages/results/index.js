@@ -46,7 +46,17 @@ function ResultsPage() {
         exteriorColor: 'COLOR', chassisNumber: 'KUZOV',
       };
       const externalData = await fetchExternalApi('SELECT * FROM main LIMIT 20', externalFieldMap);
-      const allData = [...cars, ...externalData];
+      const filteredExternal = externalData.filter(item => {
+        const norm = v => (v || '').toString().toLowerCase().trim();
+        if (norm(make) !== 'all' && make !== '' && norm(item.make) !== norm(make)) return false;
+        if (norm(model) !== 'all' && model !== '') {
+          const modelsToMatch = model.split(',').map(m => norm(m));
+          if (!modelsToMatch.some(m => norm(item.model).includes(m))) return false;
+        }
+        if (norm(auction) !== 'all' && auction !== '' && !norm(item.auctionHouse).includes(norm(auction))) return false;
+        return true;
+      });
+      const allData = [...cars, ...filteredExternal];
       
       setResults(allData);
       setFilteredResults(allData);
@@ -112,7 +122,8 @@ function ResultsPage() {
       />
       <main className="results-page bg-gray-50 dark:bg-slate-950 min-h-screen">
         {/* Compact Hero Section */}
-        <div className="bg-[#1e398a] py-4 md:py-8 text-white px-4 md:px-6">
+        <div className="bg-gradient-to-br from-[#1e398a] via-[#1e398a] to-[#1DA1F2] py-4 md:py-8 text-white px-4 md:px-6 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
             <div className="text-center md:text-left">
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-4">

@@ -1,4 +1,4 @@
-import { X, Scale, Trash2, CheckCircle2 } from 'lucide-react';
+import { X, Scale, Trash2, CheckCircle2, Plus, Check } from 'lucide-react';
 import useStore from '../store';
 import Image from 'next/image';
 import { useState } from 'react';
@@ -17,6 +17,13 @@ export default function ComparisonDrawer() {
     { label: 'Trans', key: 'transmission' },
     { label: 'Auction', key: 'auctionHouse' },
   ];
+
+  const specDiffMap = {};
+  specs.forEach(spec => {
+    const values = comparisonList.map(lot => String(lot[spec.key] || ''));
+    const allSame = values.every(v => v === values[0]);
+    specDiffMap[spec.key] = allSame;
+  });
 
   return (
     <>
@@ -82,7 +89,8 @@ export default function ComparisonDrawer() {
                           <span className="text-[7px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">
                             {spec.label}
                           </span>
-                          <span className="text-[13px] font-bold text-[#1e398a] dark:text-blue-100 truncate">
+                          <span className={`text-[13px] font-bold truncate flex items-center gap-1 ${specDiffMap[spec.key] ? 'text-green-600' : 'text-orange-600'}`}>
+                            {specDiffMap[spec.key] && <Check size={12} className="shrink-0" />}
                             {lot[spec.key] || '—'}
                           </span>
                         </div>
@@ -195,8 +203,9 @@ export default function ComparisonDrawer() {
               
               {/* Placeholders */}
               {Array.from({ length: 4 - comparisonList.length }).map((_, i) => (
-                <div key={i} className="hidden md:flex items-center justify-center p-2 rounded-xl border-2 border-dashed border-gray-100 dark:border-slate-800 text-gray-200 dark:text-slate-800 font-black text-[9px] uppercase">
-                  Empty Slot
+                <div key={i} className="hidden md:flex flex-col items-center justify-center p-2 rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-700 text-gray-300 dark:text-slate-600 font-bold text-[9px] uppercase gap-1">
+                  <Plus size={16} className="text-gray-300 dark:text-slate-600" />
+                  <span>Add Vehicle</span>
                 </div>
               ))}
             </div>

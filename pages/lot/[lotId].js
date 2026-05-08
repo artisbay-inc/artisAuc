@@ -11,7 +11,8 @@ import SkeletonLot from '../../components/SkeletonLot';
 import { hasMembership } from '../../utils/membership';
 import { mockSearchCars, mockLotList, fetchExternalApi } from '../../lib/mock-api';
 import { mockCars as liveMockCars } from '../../lib/live-mock-data';
-import { ShieldCheck, Info, Clock, FileText, Gavel } from 'lucide-react';
+import { ShieldCheck, Info, Clock, FileText, Gavel, X } from 'lucide-react';
+import { useToast } from '../../components/Toast';
 
 export async function getStaticPaths() {
   const allCars = await mockSearchCars();
@@ -69,6 +70,7 @@ export default function LotDetailPage({ initialLotId }) {
   const [loading, setLoading] = useState(true);
   const [currentImage, setCurrentImage] = useState(0);
   const [currentTime, setCurrentTime] = useState('');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [allowed, setAllowed] = useState(false);
   const [checking, setChecking] = useState(true);
 
@@ -187,11 +189,14 @@ export default function LotDetailPage({ initialLotId }) {
     fetchLotData();
   }, [lotId, allowed]);
 
+  const addToast = useToast();
+
   const handleAddToBids = (bidData) => {
     const bid = { ...bidData, lotId: lot.lotId, addedAt: new Date().toISOString(), status: 'Pending' };
     const existingBids = JSON.parse(localStorage.getItem('myBids') || '[]');
     existingBids.push(bid);
     localStorage.setItem('myBids', JSON.stringify(existingBids));
+    addToast('Bid placed successfully!', 'success');
   };
 
   if (checking || loading) {
@@ -233,8 +238,9 @@ export default function LotDetailPage({ initialLotId }) {
 
       <main className="flex-1 w-full pb-24 md:pb-12">
         {/* Header Section */}
-        <div className="bg-[#1e398a] text-white px-4 py-8 md:py-16">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="bg-gradient-to-br from-[#1e398a] via-[#1e398a] to-[#1DA1F2] text-white px-4 py-8 md:py-16 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
             <div className="text-center md:text-left w-full">
               <h1 className="text-2xl md:text-5xl font-black uppercase tracking-tight leading-tight">{lot.year} {lot.make} {lot.model}</h1>
               <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
@@ -259,7 +265,7 @@ export default function LotDetailPage({ initialLotId }) {
               {/* Media Gallery */}
               <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100">
                 <div className="relative h-[250px] md:h-[500px] bg-slate-50 rounded-2xl overflow-hidden mb-4 flex items-center justify-center border border-gray-50">
-                  <img src={lot.images[currentImage]} alt={lot.model} className="max-w-full max-h-full object-contain" />
+                  <img src={lot.images[currentImage]} alt={lot.model} className="max-w-full max-h-full object-contain cursor-pointer" onClick={() => setLightboxOpen(true)} />
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                   {lot.images.map((img, idx) => (
@@ -366,6 +372,15 @@ export default function LotDetailPage({ initialLotId }) {
       </main>
 
       <Footer />
+
+      {lightboxOpen && (
+        <div className="fixed inset-0 z-[150] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightboxOpen(false)}>
+          <button onClick={() => setLightboxOpen(false)} className="absolute top-6 right-6 text-white/70 hover:text-white z-10 bg-black/30 p-2 rounded-full">
+            <X size={28} />
+          </button>
+          <img src={lot.images[currentImage]} alt="" className="max-w-full max-h-full object-contain" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }

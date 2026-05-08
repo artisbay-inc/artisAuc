@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import Head from 'next/head';
-import { Search, Filter as FilterIcon, RotateCcw } from 'lucide-react';
+import { Search, Filter as FilterIcon, RotateCcw, X } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import LiveSidebar from '../components/LiveSidebar';
@@ -20,6 +20,7 @@ export default function LiveAuctionsPage() {
     connectWebSocket,
     currentCurrency,
     setCurrency,
+    setFilters,
     clearFilters,
     auctions,
     externalAuctions,
@@ -82,7 +83,7 @@ export default function LiveAuctionsPage() {
           
           <div className="flex-1 flex flex-col min-h-0">
             {/* Live Header Strip */}
-            <div className="bg-[#1e398a] px-4 md:px-8 py-4 flex flex-col md:flex-row items-center justify-between text-white shadow-md z-10 gap-4 sticky top-0">
+            <div className="bg-gradient-to-br from-[#1e398a] via-[#1e398a] to-[#1DA1F2] px-4 md:px-8 py-4 flex flex-col md:flex-row items-center justify-between text-white shadow-md z-10 gap-4 sticky top-0">
               <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
                 <button 
                   onClick={() => setIsSidebarOpen(true)}
@@ -135,6 +136,41 @@ export default function LiveAuctionsPage() {
                 </div>
               </div>
             </div>
+
+            {/* Active Filter Chips */}
+            {!loading && (
+              <div className="px-4 md:px-8 pt-4 md:pt-6 flex flex-wrap items-center gap-2">
+                {filters.searchQuery && (
+                  <span className="inline-flex items-center gap-1.5 bg-[#1e398a]/10 text-[#1e398a] text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">
+                    Search: {filters.searchQuery}
+                    <button onClick={() => setFilters({ searchQuery: '' })} className="hover:bg-[#1e398a]/20 rounded-full p-0.5"><X size={12} /></button>
+                  </span>
+                )}
+                {filters.auctionStatuses?.length > 0 && filters.auctionStatuses.length < 3 && filters.auctionStatuses.map(s => (
+                  <span key={s} className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-600 text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">
+                    {s}
+                    <button onClick={() => setFilters({ auctionStatuses: filters.auctionStatuses.filter(x => x !== s) })} className="hover:bg-orange-100 rounded-full p-0.5"><X size={12} /></button>
+                  </span>
+                ))}
+                {filters.makes?.map(m => (
+                  <span key={m} className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">
+                    {m}
+                    <button onClick={() => setFilters({ makes: filters.makes.filter(x => x !== m) })} className="hover:bg-blue-100 rounded-full p-0.5"><X size={12} /></button>
+                  </span>
+                ))}
+                {filters.endingSoon && (
+                  <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">
+                    Ending Soon
+                    <button onClick={() => setFilters({ endingSoon: false })} className="hover:bg-red-100 rounded-full p-0.5"><X size={12} /></button>
+                  </span>
+                )}
+                {(filters.searchQuery || filters.makes.length || filters.endingSoon) && (
+                  <button onClick={clearFilters} className="text-[9px] font-black text-gray-400 uppercase tracking-widest hover:text-red-500 ml-1">
+                    Clear all
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Results Grid Area */}
             <div className="p-4 md:p-8 flex-1">

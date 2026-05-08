@@ -132,7 +132,8 @@ export default function HomePage() {
 
         <main className="flex-1 bg-gray-50">
           {/* Hero Section */}
-          <div className="bg-[#1e398a] py-12 md:py-20 flex items-center justify-center text-white px-6">
+          <div className="bg-gradient-to-br from-[#1e398a] via-[#1e398a] to-[#1DA1F2] py-12 md:py-20 flex items-center justify-center text-white px-6 relative overflow-hidden">
+            <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
             <div className="text-center max-w-4xl w-full flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-left">
                 <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-none mb-2">CAR SEARCH</h1>

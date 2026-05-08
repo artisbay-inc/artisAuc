@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Gavel, ExternalLink } from 'lucide-react';
@@ -8,7 +9,15 @@ export default function LiveLotCard({ auction }) {
   const { toggleWatchlist, watchlist, currentCurrency, convertPrice } = useAuctionStore();
   const car = auction.car;
   const isWatched = watchlist.includes(car.id);
-  
+  const [imgIdx, setImgIdx] = useState(0);
+  const [pricePulse, setPricePulse] = useState(false);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setPricePulse(true), 100);
+    const t2 = setTimeout(() => setPricePulse(false), 1600);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
   const formatPrice = (priceUSD) => {
     const converted = convertPrice(priceUSD, 'USD', currentCurrency);
     return new Intl.NumberFormat('en-US', {
@@ -24,7 +33,7 @@ export default function LiveLotCard({ auction }) {
       <div className="relative h-56 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
         <Link href={`/lot/${car.id}`} target="_blank" className="relative w-full h-full block">
           <Image
-            src={car.imageThumbnail || car.images?.[0] || 'https://images.unsplash.com/photo-1600712242805-5f4d5f8bc70c?w=600&h=450&fit=crop'}
+            src={car.images?.[imgIdx] || car.imageThumbnail || 'https://images.unsplash.com/photo-1600712242805-5f4d5f8bc70c?w=600&h=450&fit=crop'}
             alt={`${car.make} ${car.model}`}
             fill
             unoptimized={true}
@@ -62,6 +71,16 @@ export default function LiveLotCard({ auction }) {
             className={`${isWatched ? 'fill-red-500 stroke-red-500' : 'stroke-gray-600'}`}
           />
         </button>
+        
+        {car.images?.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+            {car.images.map((_, i) => (
+              <button key={i} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setImgIdx(i); }}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${i === imgIdx ? 'bg-white w-3' : 'bg-white/50'}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
       
       <div className="p-5 flex-1 flex flex-col">
@@ -77,15 +96,15 @@ export default function LiveLotCard({ auction }) {
         </div>
         
         <div className="grid grid-cols-3 gap-2 my-4">
-          <div className="text-center p-2 bg-gray-50 rounded-lg border border-gray-100/50">
+          <div className="text-center p-2 bg-gray-50 rounded-lg border border-gray-100/50 hover:scale-105 transition-transform">
             <span className="block text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Mileage</span>
             <span className="text-xs font-bold text-slate-700">{car.mileage?.toLocaleString()} km</span>
           </div>
-          <div className="text-center p-2 bg-gray-50 rounded-lg border border-gray-100/50">
+          <div className="text-center p-2 bg-gray-50 rounded-lg border border-gray-100/50 hover:scale-105 transition-transform">
             <span className="block text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Trans</span>
             <span className="text-xs font-bold text-slate-700">{car.transmission?.slice(0, 2) || 'AT'}</span>
           </div>
-          <div className="text-center p-2 bg-gray-50 rounded-lg border border-gray-100/50">
+          <div className="text-center p-2 bg-gray-50 rounded-lg border border-gray-100/50 hover:scale-105 transition-transform">
             <span className="block text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Engine</span>
             <span className="text-xs font-bold text-slate-700">{car.engineSize?.split(' ')[0] || '3.0L'}</span>
           </div>
@@ -95,7 +114,7 @@ export default function LiveLotCard({ auction }) {
           <div className="flex justify-between items-end">
             <div>
               <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest block mb-1">Start Price</span>
-              <span className="text-xl font-black text-[#1e398a]">{formatPrice(auction.startingBid)}</span>
+              <span className={`text-xl font-black text-[#1e398a] ${pricePulse ? 'animate-pulse' : ''}`}>{formatPrice(auction.startingBid)}</span>
             </div>
           </div>
         </div>

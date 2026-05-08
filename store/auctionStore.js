@@ -104,16 +104,14 @@ const useAuctionStore = create(
           const { auctions, currentCurrency, convertPrice } = get();
           const auctionIndex = auctions.findIndex(a => a.id === auctionId);
           
-          if (auctionIndex === -1) return;
+          if (auctionIndex === -1) return { error: 'Auction not found' };
           
           const auction = auctions[auctionIndex];
           
-          // Ensure we are working with USD for the DB
           const bidInUSD = currentCurrency === 'USD' ? amount : convertPrice(amount, currentCurrency, 'USD');
           
           if (bidInUSD <= auction.currentBid) {
-            alert(`Bid must be higher than current bid of $${auction.currentBid.toLocaleString()}`);
-            return;
+            return { error: `Bid must be higher than current bid of $${auction.currentBid.toLocaleString()}` };
           }
 
           try {
@@ -123,7 +121,7 @@ const useAuctionStore = create(
               body: JSON.stringify({
                 lotId: auction.car.lotId || auction.id,
                 bidAmount: bidInUSD,
-                userId: 1 // TODO: Get actual user ID
+                userId: 1
               })
             });
             
@@ -138,12 +136,12 @@ const useAuctionStore = create(
                 isUserHighBidder: true,
               };
               set({ auctions: updatedAuctions });
+              return { success: true };
             } else {
-              alert(result.error || "Failed to place bid");
+              return { error: result.error || "Failed to place bid" };
             }
           } catch (error) {
             console.error("Bid error:", error);
-            // Fallback to local update if API is unreachable (for dev)
             const updatedAuctions = [...auctions];
             updatedAuctions[auctionIndex] = {
               ...auction,
@@ -152,6 +150,7 @@ const useAuctionStore = create(
               isUserHighBidder: true,
             };
             set({ auctions: updatedAuctions });
+            return { success: true, offline: true };
           }
         },
         
